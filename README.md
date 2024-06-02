@@ -132,11 +132,13 @@ type BasketItem = {
 Интерфейс базового модального окна
 
 ```
-export interface IModal {
-  isOpen: boolean;
-  content: any;
-  open: (content: any) => void; 
-  close: () => void; 
+interface IModal {
+  modal: HTMLElement;
+  events: IEvents;
+
+  openModal(): void;
+  closeModal(): void;
+  render(): HTMLElement
 }
 ```
 
@@ -287,10 +289,10 @@ interface IFormModel {
 - getOrderProducts - возврашает объект с данными пользователя и выбранныим товарами
 
 ## Класс ProductItemDataModel 
-Имплементирует интерфейс IProductItemDataModel 
+Имплементирует интерфейс IProductItemData 
 
 ```
-export interface IProductItemDataModel {
+export interface IProductItemData {
   productCards: IProductItem[];
   selectedСard: IProductItem;
   setPreview(item: IProductItem): void;
@@ -358,6 +360,9 @@ render - возвращает элемент карточки товара
 
 ```
 export interface IModal {
+  modal: HTMLElement;
+  events: IEvents;
+  
   openModal(): void;
   closeModal(): void;
   render(): HTMLElement
@@ -371,7 +376,7 @@ export interface IModal {
 - render - возвращае HTML элемент модального окна
 
 ## Класс SuccessModal
-Имплементирует интерфейс ISuccessModal
+Имплементирует интерфейс ISuccessModal и расширяет класс IModal
 
 ```
 interface ISuccessModal {
@@ -379,7 +384,6 @@ interface ISuccessModal {
   decription: HTMLElement;
   totalPrice: HTMLElement;
   buttonToMainPage: HTMLButtonElement;
-  render(): HTMLElement;
 }
 ```
 
@@ -418,6 +422,27 @@ interface IContacts {
 метод:
 - render - возвращает HTML элемент формы заказа с полями ввода электронной почты и адрема
 
+
+### Слой коммуникации
+
+#### Класс WeblarekApi
+Принимает в конструктор экземпляр класса Api и предоставляет методы реализующие взаимодействие с бэкендом приложения.
+
+## Взаимодействие компонентов
+Код, описывающий взаимодействие представления и данных находится в файле index.ts и выполняет функцию презентера.\
+
+Взаимодействие происходить за счет событий генерируемыз  с помощью брокера событий и обработчиков этих событий, описанных в index.ts.\
+Сначала мы создаем экземпляры всех нужных классов, а затем настаиваем  обработку событий.
+
+*Список событий которые могут генерироваться:*\
+*События изменения данных (генерирует слой данных)*
+
+- `cards:changed` - изменение списка товаров
+- `card:selected` - изменение окрытой карточки товара
+
+*События генерируемые при взаимодействии пользователя с интерфейсом (генерирует слой представления)*
+
+- `card:deleteFromBasket` - удаление товара из корзины
 
 ## UML схема 
 https://drive.google.com/file/d/1Y5noT96jFqOuTmXITkjYnVTbrXovkHLA/view?usp=sharing
