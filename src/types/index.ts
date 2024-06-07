@@ -5,9 +5,6 @@ export type CategoryType =
 	| 'кнопка'
 	| 'хард-скил';
 
-
-export type PaymentMethod = 'CASH' | 'CARD';
-
 export interface IProductItem {
 	id: string;
 	description: string;
@@ -15,6 +12,7 @@ export interface IProductItem {
 	title: string;
 	category: CategoryType;
 	price: number;
+	buttonDisable(state: boolean): void;
 }
 
 export interface IOrderRequest {
@@ -26,9 +24,8 @@ export interface IOrderRequest {
 	items: string[];
 }
 
-export interface IOrderResult {
-	id: string;
-	total: number;
+export interface IPaymentChangedEvent {
+	method: string;
 }
 
 // -----------------------------------Модель данных--------------------------------------------------------

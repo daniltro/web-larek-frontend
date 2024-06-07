@@ -47,38 +47,43 @@ yarn build
 
 ## Данные и типы используемые в приложении
 
+
 Карточка товара
 
 ```
 interface IProductItem {
 	id: string;
-	description: string;
+	description?: string;
 	image: string;
 	title: string;
 	category: CategoryType;
-	price: number | null;
+	price: number;
+	buttonDisable(state: boolean): void;
 }
 ```
 
 Тип для категории товара
 
 ```
-type CategoryType = {
-  string: "софт-скилл" | "другое" | "дополнительное" | "кнопка" | "хард-скилд";
-}
+export type CategoryType =
+	| 'софт-скил'
+	| 'другое'
+	| 'дополнительное'
+	| 'кнопка'
+	| 'хард-скил';
 ```
 
 
 Интерфейс для описания данных передаваемых в запросе на покупку
 
 ```
-interface IOrderRequest {
-  payment: PaymentMethod;
-  email: string;
-  phone: string;
-  address: string;
-  total: number;
-  items: string[];
+  interface IOrderRequest {
+	payment: string;
+	email: string;
+	phone: string;
+	address: string;
+	total: number;
+	items: string[];
 }
 ```
 
@@ -91,13 +96,23 @@ type PaymentMethod = {
 };
 ```
 
-Интерфейс для описания типа данных возвращающихся после успешного запроса на покупку
+Тип для описания типа данных возвращающихся после успешного запроса на покупку
 
 ```
-export interface IOrderResult {
-	id: string;
-	total: number;
+type ApiListResponse<Type> = {
+    total: number,
+    items: Type[]
+};
+```
+
+Интерфейс для описания данных принимаемых в класс AppState(модель данныъ приложения)
+```
+
+interface IAppStateData {
+	cards: IProductItem[];
+	selectedCard: IProductItem;
 }
+
 ```
 
 Интерфейс апи для запросов на сервер
@@ -110,89 +125,108 @@ export interface IWebLarekApi {
 }
 ```
 
+Интерфейс главной страницы
+
+```
+
+interface IPage {
+	counter: number;
+	catalog: HTMLElement[];
+	locked: boolean;
+}
+```
+
 Интерфейс корзины
 
 ```
-export interface IBasket {
-  items: BasketItem[];
-  total: number;
+interface IBasketView {
+	title: HTMLElement;
+	basketList: HTMLElement[];
+	basketButton: HTMLButtonElement;
+	totalPrice: HTMLElement;
 }
 ```
 
 Интерфейс элемента в корзине (товара)
 
 ```
-type BasketItem = {
-  id: string;
-  title: string;
-  price: number;
+interface IBasketItem {
+	index: number;
+	title: string;
+	price: number;
 }
 ```
 
 Интерфейс базового модального окна
 
 ```
-interface IModal {
-  modal: HTMLElement;
-  events: IEvents;
-
-  openModal(): void;
-  closeModal(): void;
-  render(): HTMLElement
+export interface IModalData {
+	content: HTMLElement;
 }
 ```
 
-Интерфейс модального окна карточки товара
+Интерфейс базовой формы
 
 ```
-export interface IProductModal {
-  product: IProductItem;
-  closeModal: () => void;
+
+interface IFormState {
+	valid: boolean;
+	errors: string[];
+}
+```
+Интерфейс формы выбора метода оплаты и ввода адреса доставки
+
+```
+
+interface IOrderForm {
+	address?: string;
+	email?: string;
+	phone?: string;
 }
 ```
 
-Интерфейс модального окна с формой выбора способа оплаты и ввода адреса
+Интерфейс расширяет интерфейс IOrderForm и добавляет массив строк items,\
+ используется для описания заказа, включающего все поля формы заказа, а также список товаров.
 
 ```
-export interface IPaymentModal {
-  formData: IPaymentForm;
-  updateFormData: (data: Partial<IPaymentForm>) => void;
-  submitForm: () => void;
-  closeModal: () => void;
+
+interface IOrder extends IOrderForm {
+	items: string[];
 }
 ```
 
-Интерфейс модального окна с формой данных пользователя
+Тип представляет собой частичный объект, где ключи - это поля интерфейса IOrder, а значения - строки, представляющие ошибки для соответствующих полей.
+Это позволяет удобно описывать ошибки валидации формы, где для каждого поля может быть указана соответствующая ошибка.
+
+``` 
+
+export type FormErrors = Partial<Record<keyof IOrder, string>>;
 
 ```
-export interface IContactModal {
-  formData: IContactForm;
-  updateFormData: (data: Partial<IContactForm>) => void;
-  submitForm: () => void;
-  closeModal: () => void;
+Интерфейс для описания состояние формы
+
+```
+
+export interface IFormState {
+	valid: boolean;
+	errors: string[];
 }
 ```
 
-Интерфейс формы выбора способа оплаты и ввода адреса
+Интерфейс формы выбора способа оплаты
 
 ```
-export interface IPaymentForm {
-  payment: PaymentMethod;
-  address: string;
+ interface IPaymentChangedEvent {
+	method: string;
 }
 ```
 
-Интерфейс формы данных пользователя
-
+Интерфейс для передаваемого обработчика событий
 ```
-export interface IContactForm {
-  email: string;
-  phone: string;
+interface IActions {
+	onClick: (event: MouseEvent) => void;
 }
 ```
-
-
-
 ## Архитектура приложения
 
 Код приложения разделяется на слои согласно MVP парадигме:
@@ -226,207 +260,233 @@ export interface IContactForm {
 
 ### Слой данных
 
-## класс ApiWebLarekModel 
-Имплементирует интерфейс IWebLarekApi
-```
-interface IWebLArekApi {
-  cdn: string;
-  items: IProductItem;
-  getProdutList: () => Promise<IProductItem[]>;
-  postOrder: (order: IOrderRequest) => Promise<IProductItem>;
-}
-```
- будет наследовать от Api и иметь методы:
-- getProductList - полчует список товаров
-- postOrder - получает ответ от сервера по заказу товара
+## абстрактный класс Model
 
-
-
-## класс BasketModel
-Имлементирует интерфейс IBasketModel
-
-```
-interface IBasketModel {
-  basketProducts: IProductItem[];
-  getCounter: () => number;
-  getSumPrice: () => number;
-  addProductToBasket(data: IProductItem): void;
-  deleteProductToBasket(item: IProductItem): void;
-  clearBasket(): void
-}
-```
-методы:
-- getCounter - возвращает количество товаров в корзине
-- getSumPrice - возвращает общую стоимость товаров
-- addProductToBasket - добавляет выбранный товар в корзину
-- deleteProductToBasket - удаляет вбранный товар из корзины
-- clearBasket - очищает козину
-
-## класс FormModel
-Имплементирует интерфейс IFormModel
-
-```
-interface IFormModel {
-  payment: string;
-  email: string;
-  phone: string;
-  address: string;
-  total: number;
-  items: string[];
-  setOrderAddress(field: string, value: string): void
-  validateOrder(): boolean;
-  setOrderContacts(field: string, value: string): void
-  validateContacts(): boolean;
-  getOrderProducts(): IOrderProducts;
-}
-```
+Использует абстрактный тип.
+В конструктор принимает атрибут data абстрактного типа\
+и объект типа IEvents.
 
 методы:
-- setOrderAddress - устанавливает адрес пользователя
-- validationOrder - проверяет наличие ошибок валидации в поле адреса / что способ оплаты выбран
-- setOrderContacts - устанавливает данные в полях e-mail и номера телефона
-- validateContacts - проверяет наличие ошибок валидации в полях ввода e-mail и номера телефона
-- getOrderProducts - возврашает объект с данными пользователя и выбранныим товарами
+- emitChanges - позволяет сообщить всем что модель изменилась
 
-## Класс ProductItemDataModel 
-Имплементирует интерфейс IProductItemData 
+## класс AppState
+Расширяет абстрактный класс Model и использует данные типа\ IAppStateData, позволяет нам хранить и обрабатывать все данные используемые в приложении.\
 
-```
-export interface IProductItemData {
-  productCards: IProductItem[];
-  selectedСard: IProductItem;
-  setPreview(item: IProductItem): void;
-}
-```
-
-метод:
-
-- setPreview - устанавливает данные карточки товара которую открыл пользователь
+методы: 
+- сеттер setCards - позволяет установить каталог товаров
+- геттер getCards - возвращает ранее сохраненный каталог
+- addCardToBasket - добавляет товар в корзину
+- removeCardFromBasket - удаляет товар из корзины
+- clearBasket - очищает корзину
+- getBasket - возвращает массив товаров в корзине
+- setOrderField устанавливает адрес заказа и вызывает метод для валидации
+- setContactsField устанавливает email и телефон, а также вызывает метод для валидации
+- validateOrder - метод для валидации формы OrderForm
+- validateContacts - метод для валидации формы ContactsForm
 
 ### Слой отображения
 Позволет отображать элементы и окна страницы
 
-## Класс Busket 
-Имплементирует интерфейс IBasket
 
-```
-export interface IBasket {
-  closeButton: HTMLButtonElement;
-  title: HTMLTitleElement;
-  productsList: HTMLElement;
-  submitButton: HTMLButtonElement;
-  totalPrice: HTMLSpanElement;
-  counterAtPage: HTMLElement;
-  busketButtonAtPage: HTMLButtonElement;
-  renderCounterAtPage(value: number): HTMLElement;
-  renderTotalPrice(totaPrice: number): HTMLElement;
-}
-```
+## Абстрактный класс Component
+ Использует бастрактный тип данных и позволяет отрисовывать компоненты страницы
+ Принимает в конструктор conteiner: HTMLElement
+
+ методы:
+ - protected setText - позволяет установить текстовый контент
+ - setDisable - опзволяет добавлять и снимать атрибут disable
+ - protected setHidden - позволяет скрыть элемент
+ - protected setVisible - позволяет показать элемент
+ - protected setImage - устанавливает значение атрибута src
+ - render - возвращает переданый в класс контейнер
+
+ ## Класс Page
+
+ Расширяет абстрактный класс Component с типом IPage
+ используется для отрисовки элементов главной страницы.
+
+ В конструктор принимает container и объект типа IEvents
+
+ в конструкторе инициализируются HTML элементы:
+ - обёртки страницы
+ - корзины( также на неё вешается слушатель клика)
+ - счетчика товаров 
+ - списка товаров
+
+ методы: 
+ - сеттер counter - устанавливает значение счетчика
+ - сеттер catalog - устанавливает элементы в массив товаров
+ - сеттер locked - позволяет изменять состояние прокрутки страницы 
+
+## Класс Busket 
+класс для отрисовки корзины расширяет абстрактный класс Component с типом данных IBusketView
+
+принимает в конструктор container и необязательный обаботчик actions
+
+в контейнере устанавливает значения списка товаров, общей стоимости, кнопки корзины и вешает на неё слушатель клика.
 
 методы: 
-- renderCounterAtPage - отрисовывает число добавленных товаров в корзину на главной странице
-- renderTotalPrice - отрисовывает общую стоимость товаров в корзине
-- render - возвращает элемент корзины
+- сеттер items - добавляет товары в список товаров
+- сеттер total - устанавливает общую стоимость товаров в корзине
 
 ## Класс BasektItem 
-имплементирует интерфейс IBasketItem
+Класс позволяет отрисовывать товар внутри корзины. 
+Расширяет абстрактный класс Component с типом IBAsketItem
+
+В конструктор принимает container и необязательный объект actions типа IActions.
+
+ в конструкторе инициализируются HTML элементы:
+
+- порядковый номер товара (индекс)
+- заголовок
+- цена
+- кнопка удаления (также вешается слушатель клика)
+
+методы:
+- сеттер index - устанавливает значение порядкового номера товара
+- сеттер title - устанавливает заголовок
+- сеттер price - устанавливает цену
+
+## Класс ProductListItem 
+Отрисовывает элемент списка товаров.
+Расширяет абстрактный класс Component с типом данных IProductItem
+
+принимает в конструктор blockName(используется для формирования селекторов при поиске HTML элементов), conteiner и необязательный объект actions типа IActions.
+
+в конструкторе иницализируются HTML элементы:
+ - категория товара
+ - заголовок
+ - изображение
+ - цена
+
+методы:
+- clickHandler - устанавливает слушатель на контейнер элемента
+- сеттер title - устанавливает заголовое
+- сеттер image - устанавливает изображение
+- сеттер category - устанавливает значение и цвет категории товара
+- сеттер price - устанавливает цену товара
+
+## класс ProductPreview
+
+Позволяет отрисовать элемент открытой карточки товара с подробной информацией. Расширяет класс ProductListItem. 
+
+Принимает в конструктор blockName, container и необязательный объект actions типа IActions
+
+в конструкторе иницализируются HTML элементы:
+
+- подробное описание товара
+- кнопка добавления в корзину 
 
 методы: 
-- deleteBusketItem - удаляет товар из корзины
-- render - возвращает элемент товара в корзине
-
-## Класс ProductItem 
-Имплементирует интерфейс IProductItem
-
-```
-interface IProductItem {
-  id: HTMLElement;
-  description: HTMLElement;
-  image: HTMLElement;
-  title:  HTMLElement;
-  category: HTMLElement; 
-  price: HTMLElement;
-
-  render(): HTMLElement;
-}
-```
-
-методы:
-
-render - возвращает элемент карточки товара
+- сеттер description - устанавливает подробное описание
+- buttonDisable - позволяет переключать состояние кнопки добавления в корзину (активна/не активна)
+- clickHandler - устанавливает слушатель клика на кнопку добавления в корзину
 
 ## Класс Modal 
-Имплементирует интерфейс IModal
+Базовый класс модального окна. Позволяет отрисовывать все модальные окна на странице.
 
-```
-export interface IModal {
-  modal: HTMLElement;
-  events: IEvents;
-  
-  openModal(): void;
-  closeModal(): void;
-  render(): HTMLElement
-}
-```
+Расширяет абстрактный класс Component с типом IModalData.
+
+В конструктор принимает container и объект events типа IEvets.
+
+В конструкторе инициализируются HTML элементы: 
+- кнопка закрытия модального окна 
+- контент модального окна (в это свойство попадут формы и модальное окно успешного заказа)
+- также вешаются слушатели клика на кнопку закрытия, контейнер и контент 
 
 методы:
 
+- сеттер content - устанавливает контент модального окна
 - openModal - открывает модальное окно
 - closeModal - закрывает модальное окно
 - render - возвращае HTML элемент модального окна
 
 ## Класс SuccessModal
-Имплементирует интерфейс ISuccessModal и расширяет класс IModal
+Отображает модальное окно успешного заказа, расширяет абстрактный класс Component с типом ISuccesModal.
 
-```
-interface ISuccessModal {
-  successImage: HTMLImageElement;
-  decription: HTMLElement;
-  totalPrice: HTMLElement;
-  buttonToMainPage: HTMLButtonElement;
-}
-```
+Принимает в конструктор containter и объект типа IEvents
 
-метод:
-- render - возвращает HTML элемент модального окна успешной покупки твоара
+В конструкторе инициализируются HTML элементы:
+
+- заголовок,
+- описание полной стоимости товара
+- кнопка, возвращающая на главную страницу
+
+методы:
+- сеттер description - устанавливает значение поля description 
+- handleSuccesSubmit - генерирует событие закрытия модального окна
+
+## Класс Form 
+Использует данные абстактного типа и расширяет абстрактный класс Component с типом IFormState
+
+Принимает в конструктор container и объект типа IEvents
+
+В конструкторе инициализируются HTML элементы:
+
+- кнопка собмита формы
+- элемент ошибок форм
+
+Также вешаются слушатели клика на контейнер и кнопку сабмита и генерируется событие modal:close
+
+методы: 
+- onInputChange - генерирует событие при вводе в инпут
+- сеттер valid - устанавливает состояние кнопки в зависимости от переданого булевого значниея
+- сеттер errors - устанавливает текстовый контент полей ошибок
+- render - возвращает текущий HTML элемент контейнеа
+- handleSubmit - обрабатывает событие ввода
+- clearForm - очищает поля формы и ошибок
 
 ## Класс FormOrder
-Имплементирует интерфейс IFormOrder 
+Позволяет отрисовывать валидировать и сабмитить форму выбора способа оплаты и ввода адреса.
+Расширяет класс Form с типом IOrderRequest
 
-```
-interface IFormOrder {
-	inputAdress: HTMLInputElement
-	paymentMethod: HTMLElement;
-	formErrors: HTMLElement;
-	render(): HTMLElement;
-}
-```
+В конструктор  принимает container и объект типа IEvents
 
-метод:
-- render - возвращает HTML элемент формы заказа с полем ввода адреса и выбором способа оплаты
+В конструкторе инициализируются HTML элементы:
+- поле ввода адреса
+- кнопка выбора способа оплаты "cash"
+- кнопка выбора способа оплаты "online"
+- вызывается метод setAddEventListeners
 
-## Класс IContacts
-Имплементирует интерфейс IContacts
+методы:
+- setAddEventListeners - вешает слушательввода в поле ввода, слушатели клика на кнопки выобра способа оплаты
+- handleAddewssInput - устанавливает значение данных в поле ввода адреса и вызывает родительский метод onInputChange 
+- handleCashPayment - используется для выбора способа наличными
+- handleOnlinePayment - используется для выбора оплаты онлайн
+- handlePayment - общий обработчик для handleCashpayment и handleOnlinePayment
+- clearForm - переопределение родительского мтоеда clearForm, позволяет очищать поле ввода и выбранный метод оплаты
 
-```
-interface IContacts {
-  formContacts: HTMLFormElement;
-  inputEmail: HTMLInputElement;
-  inputPhone: HTMLInputElement;
-  buttonSubmit: HTMLButtonElement;
-  formErrors: HTMLElement;
-  render(): HTMLElement;
-}
-```
 
-метод:
-- render - возвращает HTML элемент формы заказа с полями ввода электронной почты и адрема
+## Класс ContactsForm
+Позволяет отрисовывать валидировать и сабмитить форму отправки контактных данных.
+Расширяет класс Form с типом IOrderRequest
+
+В конструктор принимает container и объект типа IEvents
+
+В конструкторе инициализируются HTML элементы:
+- поле ввода email
+- поле ввода телефона
+- вызывается функция setAddEventListeners
+
+методы:
+- setAddEventListeners вешает слушатели вводп на поля ввода
+- handleSubmit - обрабатывает событие отправки формы
+- handleEmailInput - обрабатывает ввод данныхх в поле ввода email
+- handlePhoneInput - обрабатывает ввод данных в поле ввода телефона
 
 
 ### Слой коммуникации
 
-#### Класс WeblarekApi
-Принимает в конструктор экземпляр класса Api и предоставляет методы реализующие взаимодействие с бэкендом приложения.
+## класс ApiWebLarekModel 
+Имплементирует интерфейс IWebLarekApi и расширяет класс Api
+
+Принимает в конструктор cdn (для конструирования полных путей изображений), baseUrl (базовый путь для отправки запросов) и необязательное поле options (опций)
+
+методы: 
+- getProductList - возвращает список товаров
+- getProductItem - возвращает один товар
+- postOrder - отправляет данные типа IOrderRequest 
+
 
 ## Взаимодействие компонентов
 Код, описывающий взаимодействие представления и данных находится в файле index.ts и выполняет функцию презентера.\
@@ -435,14 +495,21 @@ interface IContacts {
 Сначала мы создаем экземпляры всех нужных классов, а затем настаиваем  обработку событий.
 
 *Список событий которые могут генерироваться:*\
-*События изменения данных (генерирует слой данных)*
 
-- `cards:changed` - изменение списка товаров
-- `card:selected` - изменение окрытой карточки товара
+- `productList:changed` - изменение списка товаров
+- `product:select` - выбор товара
+- `product:added` - добавление товара в корзину
+- `basket:change` - изменение товаров в корзине
+- `basket:open` - открытие корзины
+- `formErrors:change'` - изменение окрытой карточки товара
+- `/^order\..*:change/` - регулярное выражение для всех изменений полей заказа
+`/^contacts\..*:change/` - регулярное выражение для всех изменений полей контактов
+- `paymentCash:changed` - изменение способа оплаты "cash"
+- `paymentOnline:changed` - изменение способа оплаты "online"
+- `order:open` - открытие формы order
+- `orderForm:submit` - сабмит формы order
+- `contactsForm:submit` - сабмит формы ввода контактных данных
+- `modal:open` - открытие модального окна
+- `modal:close` - закрытие модального окна
+- `modalSuccess` закрытие модального окна успешного заказа
 
-*События генерируемые при взаимодействии пользователя с интерфейсом (генерирует слой представления)*
-
-- `card:deleteFromBasket` - удаление товара из корзины
-
-## UML схема 
-https://drive.google.com/file/d/1Y5noT96jFqOuTmXITkjYnVTbrXovkHLA/view?usp=sharing

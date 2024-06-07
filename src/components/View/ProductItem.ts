@@ -1,29 +1,20 @@
-import { IEvents } from '../base/events';
 import { Component } from '../base/component';
 import { ensureElement } from '../../utils/utils';
 import { CategoryType } from '../../types/index';
-import { Modal } from './Modal'
-
-export interface IPROductList {
-	events: IEvents;
-	products: IProductItem[];
-	render(): HTMLElement;
-}
 
 export interface IProductItem {
-	events: IEvents;
-
 	id: string;
 	description?: string;
 	image: string;
 	title: string;
 	category: CategoryType;
 	price: number;
+	buttonDisable(state: boolean): void;
 }
 
-// interface ICardActions {
-// 	onClick: (event: MouseEvent) => void;
-// }
+export interface IActions {
+	onClick: (event: MouseEvent) => void;
+}
 
 export class ProductListItem extends Component<IProductItem> {
 	protected _id: string;
@@ -35,7 +26,7 @@ export class ProductListItem extends Component<IProductItem> {
 	constructor(
 		protected blockName: string,
 		container: HTMLElement,
-		protected events: IEvents
+		actions?: IActions
 	) {
 		super(container);
 
@@ -52,27 +43,17 @@ export class ProductListItem extends Component<IProductItem> {
 		);
 		this._price = ensureElement<HTMLElement>(`.${blockName}__price`, container);
 
-		this.container.addEventListener('click', () => {
-			this.events.emit('item:selected', this)
-		});
-
+		if (actions && actions.onClick) {
+			this.clickHandler(actions.onClick);
+		}
 	}
 
-	set id(value: string) {
-		this._id = value;
-		this.container.dataset.id = value;
-	}
-
-	get id(): string {
-		return this.container.dataset.id || '';
+	clickHandler(handler: (event: MouseEvent) => void) {
+		this.container.addEventListener('click', handler);
 	}
 
 	set title(value: string) {
 		this.setText(this._title, value);
-	}
-
-	get title(): string {
-		return this._title.textContent || '';
 	}
 
 	set image(value: string) {
@@ -94,7 +75,6 @@ export class ProductListItem extends Component<IProductItem> {
 			this.toggleClass(this._category, 'card__category_button');
 		}
 	}
-
 	set price(value: number) {
 		this.setText(this._price, `${value} cинапсов`);
 		if (value === null) {
@@ -103,29 +83,40 @@ export class ProductListItem extends Component<IProductItem> {
 	}
 }
 
+export class ProductPreview extends ProductListItem {
+	protected _description: HTMLElement;
+	protected _button: HTMLButtonElement;
+	constructor(
+		protected blockName: string,
+		container: HTMLElement,
+		actions?: IActions
+	) {
+		super(blockName, container, actions);
+		this._description = ensureElement<HTMLElement>(
+			`.${this.blockName}__text`,
+			container
+		);
+		this._button = ensureElement<HTMLButtonElement>(
+			`.${this.blockName}__button`,
+			container
+		);
 
+		if (this._button) {
+			this.clickHandler(actions.onClick);
+		}
+	}
 
-// ---------------------------------------------------
+	set description(value: string) {
+		this._description.textContent = value;
+	}
 
-export class ProductPreview extends ProductListItem { 
-	protected _description: HTMLElement; 
-	protected _button: HTMLButtonElement; 
-	
-	constructor(protected blockName: string, container: HTMLElement, events:IEvents) { 
-	 super(blockName, container, events); 
-	 this._description = ensureElement<HTMLElement>(`.${this.blockName}__text`, container); 
-	 this._button = ensureElement<HTMLButtonElement>(`.${this.blockName}__button`, container); 
-	
-	 this._button.addEventListener('click', () => { 
-		this.events.emit('card:addtobasket', {id: this.id, title: this.title, price: this.price}); 
-	 }) 
-	} 
-	
-	set description(value:string) { 
-	 this._description.textContent = value; 
-	} 
-	
-	get description() { 
-	 return this._description.textContent || ''; 
-	} 
- }
+	buttonDisable(state: boolean) {
+		this.setDisabled(this._button, state);
+	}
+
+	clickHandler(handler: (event: MouseEvent) => void) {
+		if (this._button) {
+			this._button.addEventListener('click', handler);
+		}
+	}
+}
