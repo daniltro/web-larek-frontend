@@ -1,6 +1,6 @@
-import { Component } from '../base/component';
+import { Component } from '../base/Component';
 import { ensureElement, createElement  } from '../../utils/utils';
-import { IActions } from './productItem';
+import { IActions } from './ProductItem';
 
 export interface IBasketView {
 	title: HTMLElement;

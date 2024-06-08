@@ -1,6 +1,6 @@
-import { IProductItem } from '../View/productItem';
-import { Model } from '../base/model';
-import { FormErrors } from '../View/forms';
+import { IProductItem } from '../View/ProductItem';
+import { Model } from '../base/Model';
+import { FormErrors } from '../View/Forms';
 import { IOrderRequest } from '../../types';
 
 export interface IAppStateData {
