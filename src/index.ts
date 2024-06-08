@@ -2,19 +2,19 @@ import './scss/styles.scss';
 import { API_URL, CDN_URL } from './types/constants';
 import { IProductItem, IOrderRequest } from './types';
 import { EventEmitter } from './components/base/events';
-import { AppState } from './components/model/AppState';
-import { Page } from './components/View/Page';
-import { ProductListItem } from './components/View/ProductItem';
-import { WebLarekApi } from './components/model/ApiModel';
+import { AppState } from './components/model/appState';
+import { Page } from './components/View/page';
+import { ProductListItem } from './components/View/productItem';
+import { WebLarekApi } from './components/model/apiModel';
 import { cloneTemplate, ensureElement } from './utils/utils';
-import { Modal } from './components/View/Modal';
-import { ProductPreview } from './components/View/ProductItem';
-import { Basket, BasketItem, IBasketView } from './components/View/Basket';
-import { ContactsForm, FormOrder } from './components/View/Forms';
-import { IFormState } from './components/View/Forms';
-import { IOrderForm } from './components/View/Forms';
+import { Modal } from './components/View/modal';
+import { ProductPreview } from './components/View/productItem';
+import { Basket, BasketItem, IBasketView } from './components/View/basket';
+import { ContactsForm, FormOrder } from './components/View/forms';
+import { IFormState } from './components/View/forms';
+import { IOrderForm } from './components/View/forms';
 import { IPaymentChangedEvent } from './types/index';
-import { SuccessModal } from './components/View/Modal';
+import { SuccessModal } from './components/View/modal';
 const pageWrapper = document.querySelector('.page') as HTMLElement;
 const cardItemTemplate = ensureElement<HTMLTemplateElement>('#card-catalog');
 const api = new WebLarekApi(CDN_URL, API_URL);
@@ -30,6 +30,8 @@ const basketTemplate = ensureElement<HTMLTemplateElement>('#basket');
 const basketItemTemplate = ensureElement<HTMLTemplateElement>('#card-basket');
 const formOrderTemplate = ensureElement<HTMLTemplateElement>('#order');
 const formOrder = new FormOrder(cloneTemplate(formOrderTemplate), events);
+const successModalTemplate = ensureElement<HTMLTemplateElement>('#success');
+
 
 events.on('productList:changed', () => {
 	page.catalog = appState.getCards.map((item) => {
@@ -60,7 +62,6 @@ events.on('product:select', (item: IProductItem) => {
 		}
 	);
 	modal.render({ content: productPreviewItem.render(item) });
-
 	if (item.price === null || item.price === undefined) {
 		productPreviewItem.buttonDisable(true);
 	} else if (
@@ -76,11 +77,10 @@ events.on('product:added', (item: IProductItem) => {
 	modal.closeModal();
 });
 
-events.on('basket:changed', (item: IProductItem) => {
+events.on('basketItem:remove', (item: IProductItem) => {
 	appState.removeCardFromBasket(item);
 	page.counter = appState.getBasket().length;
 	events.emit('basket:open', item);
-	modal.closeModal();
 });
 
 events.on('basket:open', () => {
@@ -93,22 +93,24 @@ events.on('basket:open', () => {
 			events.emit('order:open');
 		},
 	});
+
+	
+
 	const basketArray = appState.getBasket();
-	const cardBasketElements = basketArray.map((item, index, price) => {
+	const cardBasketElements = basketArray.map((item, index) => {
 		const cardBasketElement = cloneTemplate(basketItemTemplate);
 		const cardBasket = new BasketItem(cardBasketElement, {
-			onClick: () => events.emit('basket:changed', item),
+			onClick: () => events.emit('basketItem:remove', item),
 		});
 		cardBasket.index = index + 1;
 		cardBasket.title = item.title;
 		cardBasket.price = item.price;
-
-		// записываем id в объект заказа
-		appState.setOrderField('items', [...appState.order.items, item.id]);
-
 		return cardBasketElement;
-	});
-
+		});
+// Если корзина пуста, то блокируем кнопку
+		if(appState.getBasket().length === 0) {
+			basket.buttonDisable(true)
+		}
 	const totalPrice = basketArray.reduce(
 		(total, item) => total + (item.price || 0),
 		0
@@ -132,7 +134,6 @@ events.on('order:open', () => {
 });
 
 // Изменилось состояние валидации формы
-
 events.on('formErrors:change', (errors: Partial<IOrderForm>) => {
 	const { address, email, phone } = errors;
 	// валидируем поле ввода адреса
@@ -140,7 +141,6 @@ events.on('formErrors:change', (errors: Partial<IOrderForm>) => {
 	formOrder.errors = Object.values({ address, phone, email })
 		.filter((i) => !!i)
 		.join('; ');
-
 	// валидируем поля ввода почты и телефона
 	formContacts.valid = !email && !phone;
 	formContacts.errors = Object.values({ address, phone, email })
@@ -149,7 +149,6 @@ events.on('formErrors:change', (errors: Partial<IOrderForm>) => {
 });
 
 // Изменилось одно из полей
-
 events.on(
 	/^order\..*:change/,
 	(data: { field: keyof IOrderForm; value: string }) => {
@@ -195,20 +194,30 @@ events.on('orderForm:submit', () => {
 });
 
 events.on('contactsForm:submit', () => {
-	api.postOrder(appState.order as IOrderRequest).then((res) => {
-		const SuccessModalTemplate = ensureElement<HTMLTemplateElement>('#success');
+	const basketArray = appState.getBasket();
+	basketArray.forEach((item)  => {
+		// записываем id в объект заказа
+		appState.setOrderField('items', [...appState.order.items, item.id]); 
+	})
+	api.postOrder(appState.order as IOrderRequest)
+	.then((res) => {
 		const SuccessWindow = new SuccessModal(
-			cloneTemplate(SuccessModalTemplate),
+			cloneTemplate(successModalTemplate),
 			events
 		);
 		SuccessWindow.description = `Списано: ${res.total} синапсов`;
 		modal.render({ content: SuccessWindow.render() });
 		console.log(res);
 
-// очщаем корзину и счетчик после усешного заказа
+		// очщаем корзину и счетчик после усешного заказа
 
 		appState.clearBasket();
 		page.counter = appState.getBasket().length;
+		formOrder.clearForm();
+		formContacts.clearForm();
+	})
+	.catch((err)  =>  {
+		console.log(err);
 	});
 });
 
@@ -217,6 +226,14 @@ events.on('modalSucces:close', () => {
 });
 
 events.on('modal:open', () => {
+	// Если поля заполнены, то кнопка остается активной
+	if(formOrder.inputAddress.value)  {
+		formOrder.buttonDisable(false)
+	} 
+	if (formContacts.inputEmail   || formContacts.inputPhone)   {
+		formContacts.buttonDisable(false)
+	}
+
 	page.locked = true;
 });
 

@@ -32,7 +32,6 @@ export class Form<T> extends Component<IFormState> {
 		this._errors = ensureElement<HTMLElement>('.form__errors', this.container);
 		this.container.addEventListener('input', this.handleInput.bind(this));
 		this._submit.addEventListener('click', this.handleSubmit.bind(this));
-		this.events.on('modal:close', this.clearForm.bind(this));
 	}
 
 	protected onInputChange(field: keyof T, value: string) {
@@ -73,6 +72,10 @@ export class Form<T> extends Component<IFormState> {
 		this.container.reset(); // Сброс формы
 		this.setText(this._errors, ''); // Очистка ошибок
 		this.valid = false; // Сброс валидации
+	}
+
+	buttonDisable(state: boolean) {
+		this.setDisabled(this._submit, state);
 	}
 }
 

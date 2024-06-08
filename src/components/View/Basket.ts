@@ -1,6 +1,6 @@
 import { Component } from '../base/component';
 import { ensureElement, createElement  } from '../../utils/utils';
-import { IActions } from '../View/ProductItem';
+import { IActions } from './productItem';
 
 export interface IBasketView {
 	title: HTMLElement;
@@ -50,6 +50,9 @@ export class Basket extends Component<IBasketView> {
 		this.setText(this._totalPrice, `${total} синапсов`);
 	}
 
+	buttonDisable(state: boolean) {
+		this.setDisabled(this._basketButton, state);
+	}
 }
 
 export class BasketItem extends Component<IBasketItem> {
@@ -81,4 +84,5 @@ export class BasketItem extends Component<IBasketItem> {
 	set price(price: number) {
 		this._price.textContent = price.toString();
 	}
+	
 }

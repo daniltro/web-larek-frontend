@@ -499,7 +499,7 @@ interface IActions {
 - `productList:changed` - изменение списка товаров
 - `product:select` - выбор товара
 - `product:added` - добавление товара в корзину
-- `basket:change` - изменение товаров в корзине
+- `basketItem:remove` - изменение товаров в корзине
 - `basket:open` - открытие корзины
 - `formErrors:change'` - изменение окрытой карточки товара
 - `/^order\..*:change/` - регулярное выражение для всех изменений полей заказа
