@@ -115,6 +115,8 @@ export class FormOrder extends Form<IOrderRequest> {
 			'click',
 			this.handleOnlinePayment.bind(this)
 		);
+
+		this.updateButtonState();
 	}
 
 	handleAddressInput() {
@@ -160,6 +162,11 @@ export class FormOrder extends Form<IOrderRequest> {
 		this.paymentMethodCash.classList.remove('button_alt-active');
 		this.paymentMethodOnline.classList.remove('button_alt-active');
 	}
+
+	updateButtonState() {
+		const isAddressInput = this.inputAddress.value.trim() !== '';
+		this.buttonDisable(!(isAddressInput));
+	}
 }
 
 export class ContactsForm extends Form<IOrderRequest> {
@@ -179,6 +186,7 @@ export class ContactsForm extends Form<IOrderRequest> {
 		);
 
 		this.setAddEventListeners();
+		this.updateButtonState();
 	}
 
 	setAddEventListeners() {
@@ -208,5 +216,10 @@ export class ContactsForm extends Form<IOrderRequest> {
 	handlePhoneInput() {
 		const value = this.inputPhone.value;
 		this.onInputChange('phone', value);
+	}
+	updateButtonState() {
+		const isEmailFilled = this.inputEmail.value.trim() !== '';
+		const isPhoneFilled = this.inputPhone.value.trim() !== '';
+		this.buttonDisable(!(isEmailFilled && isPhoneFilled));
 	}
 }

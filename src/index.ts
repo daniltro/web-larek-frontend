@@ -31,7 +31,11 @@ const basketItemTemplate = ensureElement<HTMLTemplateElement>('#card-basket');
 const formOrderTemplate = ensureElement<HTMLTemplateElement>('#order');
 const formOrder = new FormOrder(cloneTemplate(formOrderTemplate), events);
 const successModalTemplate = ensureElement<HTMLTemplateElement>('#success');
-
+const formContactsTemplate = ensureElement<HTMLTemplateElement>('#contacts');
+const formContacts = new ContactsForm(
+	cloneTemplate(formContactsTemplate),
+	events
+);
 
 events.on('productList:changed', () => {
 	page.catalog = appState.getCards.map((item) => {
@@ -94,8 +98,6 @@ events.on('basket:open', () => {
 		},
 	});
 
-	
-
 	const basketArray = appState.getBasket();
 	const cardBasketElements = basketArray.map((item, index) => {
 		const cardBasketElement = cloneTemplate(basketItemTemplate);
@@ -106,11 +108,11 @@ events.on('basket:open', () => {
 		cardBasket.title = item.title;
 		cardBasket.price = item.price;
 		return cardBasketElement;
-		});
-// Если корзина пуста, то блокируем кнопку
-		if(appState.getBasket().length === 0) {
-			basket.buttonDisable(true)
-		}
+	});
+	// Если корзина пуста, то блокируем кнопку
+	if (appState.getBasket().length === 0) {
+		basket.buttonDisable(true);
+	}
 	const totalPrice = basketArray.reduce(
 		(total, item) => total + (item.price || 0),
 		0
@@ -171,18 +173,6 @@ events.on('paymentOnline:changed', (payment: IPaymentChangedEvent) => {
 	appState.setOrderField('payment', payment.method);
 });
 
-const formContactsTemplate = ensureElement<HTMLTemplateElement>('#contacts');
-const formContacts = new ContactsForm(
-	cloneTemplate(formContactsTemplate),
-	events
-);
-
-const SuccessModalTemplate = ensureElement<HTMLTemplateElement>('#success');
-const SuccessWindow = new SuccessModal(
-	cloneTemplate(SuccessModalTemplate),
-	events
-);
-
 events.on('orderForm:submit', () => {
 	const initialState: Partial<IOrderRequest> & IFormState = {
 		valid: false, // Начальное состояние валидации
@@ -195,30 +185,31 @@ events.on('orderForm:submit', () => {
 
 events.on('contactsForm:submit', () => {
 	const basketArray = appState.getBasket();
-	basketArray.forEach((item)  => {
+	basketArray.forEach((item) => {
 		// записываем id в объект заказа
-		appState.setOrderField('items', [...appState.order.items, item.id]); 
-	})
-	api.postOrder(appState.order as IOrderRequest)
-	.then((res) => {
-		const SuccessWindow = new SuccessModal(
-			cloneTemplate(successModalTemplate),
-			events
-		);
-		SuccessWindow.description = `Списано: ${res.total} синапсов`;
-		modal.render({ content: SuccessWindow.render() });
-		console.log(res);
-
-		// очщаем корзину и счетчик после усешного заказа
-
-		appState.clearBasket();
-		page.counter = appState.getBasket().length;
-		formOrder.clearForm();
-		formContacts.clearForm();
-	})
-	.catch((err)  =>  {
-		console.log(err);
+		appState.setOrderField('items', [...appState.order.items, item.id]);
 	});
+	api
+		.postOrder(appState.order as IOrderRequest)
+		.then((res) => {
+			const successWindow = new SuccessModal(
+				cloneTemplate(successModalTemplate),
+				events
+			);
+			successWindow.description = `Списано: ${res.total} синапсов`;
+			modal.render({ content: successWindow.render() });
+			console.log(res);
+
+			// очщаем корзину и счетчик после усешного заказа
+
+			appState.clearBasket();
+			page.counter = appState.getBasket().length;
+			formOrder.clearForm();
+			formContacts.clearForm();
+		})
+		.catch((err) => {
+			console.log(err);
+		});
 });
 
 events.on('modalSucces:close', () => {
@@ -226,14 +217,8 @@ events.on('modalSucces:close', () => {
 });
 
 events.on('modal:open', () => {
-	// Если поля заполнены, то кнопка остается активной
-	if(formOrder.inputAddress.value)  {
-		formOrder.buttonDisable(false)
-	} 
-	if (formContacts.inputEmail   || formContacts.inputPhone)   {
-		formContacts.buttonDisable(false)
-	}
-
+	formOrder.updateButtonState();
+	formContacts.updateButtonState();
 	page.locked = true;
 });
 
