@@ -68,10 +68,12 @@ events.on('product:select', (item: IProductItem) => {
 	modal.render({ content: productPreviewItem.render(item) });
 	if (item.price === null || item.price === undefined) {
 		productPreviewItem.buttonDisable(true);
+		productPreviewItem.button = 'Нет в наличии'
 	} else if (
 		appState.getBasket().some((basketItem) => basketItem.id === item.id)
 	) {
 		productPreviewItem.buttonDisable(true);
+		productPreviewItem.button = 'Уже в корзине'
 	}
 });
 
@@ -88,7 +90,7 @@ events.on('basketItem:remove', (item: IProductItem) => {
 });
 
 events.on('basket:open', () => {
-	// Очисщаем данные заказа перед заполнением новыми данными
+	// Очищаем данные заказа перед заполнением новыми данными
 	appState.setOrderField('items', []);
 	appState.setOrderField('total', 0);
 

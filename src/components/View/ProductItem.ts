@@ -61,20 +61,33 @@ export class ProductListItem extends Component<IProductItem> {
 	}
 
 	set category(value: CategoryType) {
-		this.setText(this._category, value);
-		this.toggleClass(this._category, 'card__category_soft');
-		if (value === 'другое') {
-			this.toggleClass(this._category, 'card__category_other');
-		} else if (value === 'софт-скил') {
-			this.toggleClass(this._category, 'card__category_soft');
-		} else if (value === 'хард-скил') {
-			this.toggleClass(this._category, 'card__category_hard');
-		} else if (value === 'дополнительное') {
-			this.toggleClass(this._category, 'card__category_additional');
-		} else if (value === 'кнопка') {
-			this.toggleClass(this._category, 'card__category_button');
-		}
-	}
+    // Сначала убираем все возможные классы категорий
+    this._category.classList.remove(
+        'card__category_soft',
+        'card__category_other',
+        'card__category_soft',
+        'card__category_hard',
+        'card__category_additional',
+        'card__category_button'
+    );
+
+    // Затем устанавливаем текст категории
+    this.setText(this._category, value);
+
+    // И добавляем новый класс в зависимости от значения категории
+    if (value === 'другое') {
+        this._category.classList.add('card__category_other');
+    } else if (value === 'софт-скил') {
+        this._category.classList.add('card__category_soft');
+    } else if (value === 'хард-скил') {
+        this._category.classList.add('card__category_hard');
+    } else if (value === 'дополнительное') {
+        this._category.classList.add('card__category_additional');
+    } else if (value === 'кнопка') {
+        this._category.classList.add('card__category_button');
+    }
+}
+
 	set price(value: number) {
 		this.setText(this._price, `${value} cинапсов`);
 		if (value === null) {
@@ -108,6 +121,10 @@ export class ProductPreview extends ProductListItem {
 
 	set description(value: string) {
 		this._description.textContent = value;
+	}
+
+	set button (value: string)  {
+		this._button.textContent  = value;
 	}
 
 	buttonDisable(state: boolean) {
