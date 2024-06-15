@@ -68,7 +68,7 @@ events.on('product:select', (item: IProductItem) => {
 	modal.render({ content: productPreviewItem.render(item) });
 	if (item.price === null || item.price === undefined) {
 		productPreviewItem.buttonDisable(true);
-		productPreviewItem.button = 'Нет в наличии'
+		productPreviewItem.button = 'Недоступно к покупке'
 	} else if (
 		appState.getBasket().some((basketItem) => basketItem.id === item.id)
 	) {
